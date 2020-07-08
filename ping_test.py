@@ -74,8 +74,8 @@ def main():
 
         if alert_count >= 4:
             dtnow = datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m-%d %H:%M")
-            print("{} - Exceeded alert count, backing off for 24 hours".format(dtnow))
-            time.sleep(24*60*60)
+            print("{} - Exceeded alert count, backing off for 4 hours".format(dtnow))
+            time.sleep(4*60*60)
             count = 0
             alert_count = 0
 
