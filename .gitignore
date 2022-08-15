@@ -1,0 +1,7 @@
+twilio_info.py
+env/
+__pycache__/
+*.json
+.DS_Store
+.ipynb_checkpoints/
+pi@syslog
