@@ -66,7 +66,9 @@ class address:
         self.ip_address = ip_address
         self.mac_address = mac_address
         if not self.verify_address(ip_address, mac_address):
-            self.ip_address = self.find_ip_address(mac_address, subnet)
+            ip_address = self.find_ip_address(mac_address, subnet)
+            if len(ip_address) > 6:
+                self.ip_address = ip_address
     
     def find_mac_address(self, ip_address):
         ping_addr(ip_address)
