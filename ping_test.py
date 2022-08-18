@@ -53,26 +53,41 @@ def ping_addr(ip_address):
     return(res)
     
 
+def ping_sweep(subnet):
+    for x in range(1, 255):
+        ip_address = f"{subnet}{x}"
+        print(ip_address)
+        subprocess.call(['ping', '-w', '0.1', '-c', '1', ip_address])
+    return    
+
 class address:
     def __init__(self, ip_address, mac_address):
         self.call_count = 0
         self.ip_address = ip_address
         self.mac_address = mac_address
         if not self.verify_address(ip_address, mac_address):
-            self.ip_address = self.find_ip_address(mac_address)
+            self.ip_address = self.find_ip_address(mac_address, subnet)
     
     def find_mac_address(self, ip_address):
         ping_addr(ip_address)
         pid = subprocess.Popen(["arp", "-n", ip_address], stdout=subprocess.PIPE)
         s = pid.communicate()[0]
-        mac = re.search(r"(([a-f\d]{1,2}\:){5}[a-f\d]{1,2})", str(s)).groups()[0]
+        results = re.search(r"(([a-f\d]{1,2}\:){5}[a-f\d]{1,2})", str(s))
+        if results:
+            mac = results.groups()[0]
+        else:
+            mac = ''
         return(mac)
 
-    def find_ip_address(self, mac_address):
-        ping_addr('255.255.255.255')
+    def find_ip_address(self, mac_address, subnet):
+        ping_sweep(subnet)
         pid = subprocess.Popen(["arp", "-an"], stdout=subprocess.PIPE)
         s = pid.communicate()[0]
-        ip_address = re.search(f"\(([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\) at {mac_address.lower()}", str(s).lower())[1]
+        results = re.search(f"\(([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\) at {mac_address.lower()}", str(s).lower())
+        if results:
+            ip_address = results[1]
+        else:
+            ip_address = ''
         return(ip_address)
 
     def verify_address(self, ip_address, mac_address):
@@ -85,14 +100,22 @@ class address:
             self.__init__(self.ip_address, self.mac_address)
         return(self.ip_address)
     
-def main(ip_address, mac_address):    
+def main(ip_address, mac_address, device_name):    
     addr = address(ip_address, mac_address)
+    alert_active = False
     while True:
         alert_count = 0
 
         while alert_count < 4:
             status = ping_addr(addr.get_ip_address())
             count = 0
+            
+            if (alert_active)&(status == 0):
+                dtnow = datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m-%d %H:%M")
+                print("{} - Host back up".format(dtnow))
+                send_alert("{} has been restored!".format(device_name))
+                alert_active = False
+                
 
             while (status != 0)&(count<5):
                 dtnow = datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m-%d %H:%M")
@@ -102,8 +125,9 @@ def main(ip_address, mac_address):
                 count += 1
 
             if status != 0:
-                send_alert("Host {} is down!".format(ip_address))
+                send_alert("{} monitor is not responding!".format(device_name))
                 alert_count += 1
+                alert_active = True
 
             time.sleep(30)
 
@@ -119,6 +143,8 @@ logger.info("Starting Ping Test")
 
 
 ip_address = "10.0.2.217"
+subnet = '10.0.2.'
 mac_address = '58:EF:68:EA:54:2D'
+device_name = 'Freezer'
 
-main(ip_address, mac_address)
+main(ip_address, mac_address, device_name)
