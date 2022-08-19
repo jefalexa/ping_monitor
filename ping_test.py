@@ -40,7 +40,7 @@ def send_alert(msg):
 
 def ping_addr(ip_address):
     try:
-        res = subprocess.call(['ping', '-c', '3', ip_address])
+        res = subprocess.call(['ping', '-c', '5', ip_address])
     except:
         res = 99
     dtnow = datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m-%d %H:%M")
@@ -122,7 +122,7 @@ def main(ip_address, mac_address, device_name):
             while (status != 0)&(count<5):
                 dtnow = datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m-%d %H:%M")
                 print("{} - Ping failed, backoff and retry".format(dtnow))
-                time.sleep(3)
+                time.sleep(10)
                 status = ping_addr(ip_address)
                 count += 1
 
