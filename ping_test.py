@@ -101,8 +101,9 @@ class address:
         if self.call_count > 10:
             self.__init__(self.ip_address, self.mac_address)
         return(self.ip_address)
-    
-def main(ip_address, mac_address, device_name):    
+
+
+def main_bak(ip_address, mac_address, device_name):    
     addr = address(ip_address, mac_address)
     alert_active = False
     while True:
@@ -140,8 +141,48 @@ def main(ip_address, mac_address, device_name):
             count = 0
             alert_count = 0
 
-logger.info("Starting Ping Test")
 
+def main(ip_address, mac_address, device_name):    
+    addr = address(ip_address, mac_address)
+    alert_active = False
+    alert_count = 0
+    last_message_sent = None
+    while True:
+        status = ping_addr(addr.get_ip_address())
+
+        # If the host is up...  
+        if status == 0:
+            # If there is currently an alert, but ping is now responding, then send a back up message.  
+            if alert_active:
+                dtnow = datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m-%d %H:%M")
+                print("{} - Host back up".format(dtnow))
+                send_alert("{} has been restored as of {}!".format(device_name, dtnow))
+                alert_active = False
+                alert_count = 0
+
+        # If the host is down... 
+        else:
+            count = 0
+            # Retry in 30 second intervals for 10 intervals
+            while (status != 0)&(count < 10):
+                dtnow = datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m-%d %H:%M")
+                print("{} - Ping failed, backoff and retry".format(dtnow))
+                time.sleep(30)
+                status = ping_addr(ip_address)
+                count += 1
+            # If it's still down after the backoff and an alert has not already been sent then send a message
+            if (status != 0) & (alert_active==False):
+                send_alert("{} monitor is not responding as of {}!".format(device_name, dtnow))
+                last_message_sent = datetime.datetime.now()
+                alert_active = True
+                alert_count += 1
+
+        # If it's been an hour since the last message was sent and the alert is still active then reset the alert status unless there have already been 4 down messages in a row
+        if (last_message_sent!=None) & (alert_active) & (alert_count < 5):
+            if last_message_sent + datetime.timedelta(hours=1) <= datetime.datetime.now():
+                alert_active = False
+
+        time.sleep(30)
 
 
 ip_address = "10.0.2.217"
@@ -149,4 +190,6 @@ subnet = '10.0.2.'
 mac_address = '58:EF:68:EA:54:2D'
 device_name = 'Freezer'
 
-main(ip_address, mac_address, device_name)
+if __name__ == '__main__':
+    logger.info("Starting Ping Test")
+    main(ip_address, mac_address, device_name)
